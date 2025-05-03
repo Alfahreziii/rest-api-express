@@ -1,34 +1,23 @@
-const {
-  getAll: getAllUsers,
-  create: createUser,
-  updateById,
-  deleteById,
-} = require("../models/user");
-
-/**
- * @param {import("express").Request} _req
- * @param {import("express").Response} res
- * @param {import("express").NextFunction} _next
- */
+const { user: UserModel } = require("../models");
+const bcrypt = require('bcryptjs');
 
 /**
  * GET /users
  */
 const index = async (_req, res) => {
-  const users = await getAllUsers();
-  return res.send({
-    message: "Success",
-    data: users,
-  });
-};
-
-/**
- * POST /users
- */
-const store = async (req, res) => {
-  const { name, email, password } = req.body;
-  await createUser({ name, email, password });
-  return res.status(201).send({ message: "User created" });
+  try {
+    return res.send({
+      message: "Success",
+      data: await UserModel.findAll({
+        attributes: ["id", "name", "email"],
+      }),
+    });
+  } catch (err) {
+    return res.status(500).send({
+      message: "Error retrieving users",
+      error: err.message,
+    });
+  }
 };
 
 /**
@@ -36,23 +25,63 @@ const store = async (req, res) => {
  */
 const update = async (req, res) => {
   const { id } = req.params;
-  const { name, email } = req.body;
-  await updateById(id, { name, email });
-  return res.send({ message: "User updated" });
+  const { name, email, password } = req.body;
+
+  try {
+    // Persiapkan objek data yang akan diupdate
+    const updateData = { name, email };
+
+    // Jika password ada, hash password terlebih dahulu
+    if (password) {
+      const passwordHash = await bcrypt.hash(password, 10);
+      updateData.password = passwordHash;
+    }
+
+    // Update data user di database
+    const [updated] = await UserModel.update(updateData, {
+      where: { id },
+    });
+
+    if (updated) {
+      return res.send({ message: "User updated successfully" });
+    }
+
+    return res.status(404).send({ message: "User not found" });
+  } catch (err) {
+    return res.status(500).send({
+      message: "Error updating user",
+      error: err.message,
+    });
+  }
 };
+
 
 /**
  * DELETE /users/:id
  */
 const destroy = async (req, res) => {
   const { id } = req.params;
-  await deleteById(id);
-  return res.send({ message: "User deleted" });
+
+  try {
+    const deleted = await UserModel.destroy({
+      where: { id },
+    });
+
+    if (deleted) {
+      return res.send({ message: "User deleted successfully" });
+    }
+    return res.status(404).send({ message: "User not found" });
+  } catch (err) {
+    return res.status(500).send({
+      message: "Error deleting user",
+      error: err.message,
+    });
+  }
 };
+
 
 module.exports = {
   index,
-  store,
   update,
   destroy,
 };
