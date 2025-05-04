@@ -2,17 +2,60 @@ const { user: UserModel } = require("../models");
 const bcrypt = require('bcryptjs');
 const multer = require("multer");
 const path = require("path");
+const Sequelize = require("sequelize");
+const Op = Sequelize.Op; 
 
 /**
  * GET /users
  */
-const index = async (_req, res) => {
+const index = async (req, res) => {
   try {
+    // Mengambil query params untuk filter, sort, dan search
+    const { name, email, sort_by, order, search } = req.query;
+
+    // Membuat kondisi untuk filter
+    const whereCondition = {};
+
+    if (name) {
+      whereCondition.name = {
+        [Op.like]: `%${name}%`,  // Filter berdasarkan nama (menggunakan LIKE)
+      };
+    }
+
+    if (email) {
+      whereCondition.email = {
+        [Op.like]: `%${email}%`,  // Filter berdasarkan email (menggunakan LIKE)
+      };
+    }
+
+    // Membuat kondisi untuk search
+    if (search) {
+      whereCondition[Op.or] = [
+        {
+          name: { [Op.like]: `%${search}%` },
+        },
+        {
+          email: { [Op.like]: `%${search}%` },
+        },
+      ];
+    }
+
+    // Membuat opsi untuk sorting
+    let orderCondition = [];
+    if (sort_by && order) {
+      orderCondition = [[sort_by, order.toUpperCase()]];  // Menentukan urutan sorting
+    }
+
+    // Mengambil data dengan filter, sort, dan search
+    const users = await UserModel.findAll({
+      where: whereCondition,
+      order: orderCondition,  // Sorting berdasarkan query params
+      attributes: ["id", "name", "email"],  // Menentukan atribut yang ingin ditampilkan
+    });
+
     return res.send({
       message: "Success",
-      data: await UserModel.findAll({
-        attributes: ["id", "name", "email"],
-      }),
+      data: users,
     });
   } catch (err) {
     return res.status(500).send({
