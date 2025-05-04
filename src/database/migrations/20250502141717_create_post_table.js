@@ -1,21 +1,45 @@
-/**
- * @param { import("knex").Knex } knex
- * @returns { Promise<void> }
- */
-exports.up = function(knex) {
-    return knex.schema.createTable("posts", (table) => {
-        table.increments("id").primary();
-        table.integer("user_id").unsigned().references("id").inTable("users").onUpdate("CASCADE").onDelete("CASCADE");
-        table.string("title").notNullable();
-        table.text("content", "longtext");
-        table.timestamps({ useTimestamps: true, defaultToNow: true });
-      });
-};
+'use strict';
 
-/**
- * @param { import("knex").Knex } knex
- * @returns { Promise<void> }
- */
-exports.down = function(knex) {
-  return knex.schema.dropTable("posts");
+/** @type {import('sequelize-cli').Migration} */
+module.exports = {
+  async up(queryInterface, Sequelize) {
+    // Membuat tabel posts
+    await queryInterface.createTable('posts', {
+      id: {
+        type: Sequelize.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+      },
+      user_id: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: 'users', // Nama tabel yang menjadi referensi
+          key: 'id',      // Kolom yang menjadi referensi
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+      },
+      title: {
+        type: Sequelize.STRING,
+        allowNull: false,
+      },
+      content: {
+        type: Sequelize.TEXT('long'),
+      },
+      created_at: {
+        type: Sequelize.DATE,
+        defaultValue: Sequelize.NOW,
+      },
+      updated_at: {
+        type: Sequelize.DATE,
+        defaultValue: Sequelize.NOW,
+      },
+    });
+  },
+
+  async down(queryInterface, Sequelize) {
+    // Menghapus tabel posts jika migrasi dibatalkan
+    await queryInterface.dropTable('posts');
+  },
 };

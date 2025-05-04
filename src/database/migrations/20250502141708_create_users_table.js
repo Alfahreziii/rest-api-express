@@ -1,21 +1,41 @@
-/**
- * @param { import("knex").Knex } knex
- * @returns { Promise<void> }
- */
-exports.up = function(knex) {
-  return knex.schema.createTable("users", (table) => {
-    table.increments("id").primary();
-    table.string("name").notNullable();
-    table.string("email").notNullable().unique();
-    table.string("password").notNullable();
-    table.timestamps(true, true);
-  });
-};
+'use strict';
 
-/**
- * @param { import("knex").Knex } knex
- * @returns { Promise<void> }
- */
-exports.down = function(knex) {
-  return knex.schema.dropTable("users");
+/** @type {import('sequelize-cli').Migration} */
+module.exports = {
+  async up(queryInterface, Sequelize) {
+    // Membuat tabel users
+    await queryInterface.createTable('users', {
+      id: {
+        type: Sequelize.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+      },
+      name: {
+        type: Sequelize.STRING,
+        allowNull: false,
+      },
+      email: {
+        type: Sequelize.STRING,
+        allowNull: false,
+        unique: true, // Menggunakan unique constraint untuk email
+      },
+      password: {
+        type: Sequelize.STRING,
+        allowNull: false,
+      },
+      created_at: {
+        type: Sequelize.DATE,
+        defaultValue: Sequelize.NOW,
+      },
+      updated_at: {
+        type: Sequelize.DATE,
+        defaultValue: Sequelize.NOW,
+      },
+    });
+  },
+
+  async down(queryInterface, Sequelize) {
+    // Menghapus tabel users jika migrasi dibatalkan
+    await queryInterface.dropTable('users');
+  },
 };
